@@ -63,12 +63,14 @@ def test_pad_rm(device, n, c, h, w, padding, torch_padding, value, dtype):
         ((8, 1, 1, 1), ((0, 0), (0, 0), (0, 0), (0, 191)), (0, 191, 0, 0, 0, 0, 0, 0)),
         ((1, 1, 1, 2), ((0, 0), (0, 0), (0, 0), (0, 254)), (0, 254, 0, 0, 0, 0, 0, 0)),
         ((4, 1, 1, 4), ((0, 0), (0, 0), (0, 0), (0, 60)), (0, 60, 0, 0, 0, 0, 0, 0)),
+        ((1, 1, 1, 1985), ((0, 0), (0, 0), (0, 0), (49290, 0)), (49290, 0, 0, 0, 0, 0, 0, 0)),
     ],
 )
 @pytest.mark.parametrize("value", [0])
 def test_pad_rm_small_to_large_width(device, shape, padding, torch_padding, value):
     """Regression test for issue #39875: padding from very small width to large width
-    caused CB allocation to exceed L1 size due to using input width for stick batching."""
+    caused CB allocation to exceed L1 size due to using input width for stick batching,
+    and for wide padded rows whose fixed 16-row CB depth exceeded L1."""
     torch.manual_seed(0)
 
     torch_input_tensor = torch.rand(shape).bfloat16().float()
