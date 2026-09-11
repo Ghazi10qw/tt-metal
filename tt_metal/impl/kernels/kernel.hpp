@@ -71,6 +71,8 @@ KernelHandle CreateKernelFromString(
     const EthernetConfig& config);
 
 struct DramConfig {
+    // Must be NOC_0: it is the only NIU firmware leaves in stream mode on every DRAM core, and a NIU
+    // in NOC2AXI mode cannot initiate NOC transactions. See tt_metal/hw/inc/experimental/drisc_mode.h.
     NOC noc = NOC::NOC_0;
     std::vector<uint32_t> compile_args;
     std::map<std::string, std::string> defines;

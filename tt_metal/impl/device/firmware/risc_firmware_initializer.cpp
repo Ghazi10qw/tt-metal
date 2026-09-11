@@ -1523,6 +1523,18 @@ void RiscFirmwareInitializer::initialize_and_launch_firmware(tt::ChipId device_i
         for (const auto& virtual_dram_core : soc_d.get_metal_dram_cores(CoordSystem::TRANSLATED)) {
             dram_core_info.view().absolute_logical_x() = virtual_dram_core.x;
             dram_core_info.view().absolute_logical_y() = virtual_dram_core.y;
+            // Firmware keeps these NIUs in NOC2AXI and puts the rest in stream mode. NOC0 must be
+            // among the rest: CreateKernel(DramConfig) pins DRISC kernels to NOC0, and a NIU in
+            // NOC2AXI cannot initiate NOC transactions.
+            const uint8_t niu_mask = soc_d.get_dram_endpoint_noc_mask(virtual_dram_core);
+            TT_FATAL(
+                (niu_mask & 0x1) == 0,
+                "DRAM core ({}, {}) runs Metal DRISC firmware but is a DRAM view's NOC0 endpoint, so its "
+                "NOC0 NIU must stay in NOC2AXI mode and no DRISC kernel on it could issue NOC traffic. "
+                "get_metal_dram_cores is supposed to exclude NOC0 endpoints.",
+                virtual_dram_core.x,
+                virtual_dram_core.y);
+            dram_core_info.view().noc2axi_niu_mask() = niu_mask;
             uint64_t core_info_addr = hal_.get_dev_noc_addr(HalProgrammableCoreType::DRAM, HalL1MemAddrType::CORE_INFO);
             cluster_.write_core(
                 dram_core_info.data(),
